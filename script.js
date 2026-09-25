@@ -11,39 +11,18 @@ let darkMode =
     localStorage.getItem("darkMode") === "true";
 
 
-// =========================
-// BUAT ID UNTUK DATA LAMA
-// =========================
-
 expenses = expenses.map(function (expense) {
-
     return {
-        ...expense,
-        id: expense.id || generateId()
+        id: expense.id || generateId(),
+        description: expense.description || "",
+        amount: Number(expense.amount) || 0,
+        date: expense.date || "",
+        category: expense.category || "Lainnya"
     };
-
 });
 
-localStorage.setItem(
-    "expenses",
-    JSON.stringify(expenses)
-);
+saveExpenses();
 
-
-// =========================
-// TOTAL PENGELUARAN
-// =========================
-
-let totalExpense = expenses.reduce(function (total, expense) {
-
-    return total + Number(expense.amount);
-
-}, 0);
-
-
-// =========================
-// ELEMENT
-// =========================
 
 const expenseForm =
     document.getElementById("expenseForm");
@@ -60,17 +39,19 @@ const sortSelect =
 const themeToggle =
     document.getElementById("themeToggle");
 
+const chartElement =
+    document.getElementById("expenseChart");
 
-// =========================
-// DARK MODE
-// =========================
+const chartLegend =
+    document.getElementById("chartLegend");
+
+
+let totalExpense = calculateTotalExpense();
+
 
 if (darkMode) {
-
     document.body.classList.add("dark");
-
-    themeToggle.textContent =
-        "☀️ Light Mode";
+    themeToggle.textContent = "☀️ Light Mode";
 }
 
 
@@ -93,58 +74,6 @@ themeToggle.addEventListener("click", function () {
 });
 
 
-// =========================
-// CHART
-// =========================
-
-const chartCanvas =
-    document.getElementById("expenseChart");
-
-const expenseChart = new Chart(chartCanvas, {
-
-    type: "doughnut",
-
-    data: {
-
-        labels: [],
-
-        datasets: [{
-
-            data: [],
-
-            backgroundColor: [
-                "#6366f1",
-                "#22c55e",
-                "#f59e0b",
-                "#ef4444",
-                "#06b6d4",
-                "#ec4899"
-            ],
-
-            borderWidth: 2,
-
-            borderColor: "#ffffff"
-        }]
-    },
-
-    options: {
-
-        responsive: true,
-
-        plugins: {
-
-            legend: {
-                position: "bottom"
-            }
-        }
-    }
-});
-
-
-// =========================
-// DATA AWAL
-// =========================
-
 document.getElementById("totalBudget").textContent =
     formatRupiah(totalBudget);
 
@@ -157,16 +86,11 @@ document.getElementById("budget").value =
 document.getElementById("limit").value =
     spendingLimit || "";
 
+
 updateRemaining();
-
 updateTransactionList();
-
 updateChart();
 
-
-// =========================
-// SIMPAN BUDGET
-// =========================
 
 budgetForm.addEventListener("submit", function (event) {
 
@@ -178,19 +102,13 @@ budgetForm.addEventListener("submit", function (event) {
     const limit =
         Number(document.getElementById("limit").value) || 0;
 
-
     if (budget <= 0) {
-
         alert("Budget harus lebih dari 0.");
-
         return;
     }
 
-
     totalBudget = budget;
-
     spendingLimit = limit;
-
 
     localStorage.setItem(
         "totalBudget",
@@ -202,30 +120,28 @@ budgetForm.addEventListener("submit", function (event) {
         spendingLimit
     );
 
-
     document.getElementById("totalBudget").textContent =
         formatRupiah(totalBudget);
 
     updateRemaining();
-
     updateTransactionList();
 });
 
-
-// =========================
-// TAMBAH PENGELUARAN
-// =========================
 
 expenseForm.addEventListener("submit", function (event) {
 
     event.preventDefault();
 
-
     const description =
-        document.getElementById("description").value.trim();
+        document
+            .getElementById("description")
+            .value
+            .trim();
 
     const amount =
-        Number(document.getElementById("amount").value);
+        Number(
+            document.getElementById("amount").value
+        );
 
     const date =
         document.getElementById("date").value;
@@ -236,13 +152,12 @@ expenseForm.addEventListener("submit", function (event) {
 
     if (
         description === "" ||
+        !Number.isFinite(amount) ||
         amount <= 0 ||
         date === "" ||
         category === ""
     ) {
-
         alert("Semua data pengeluaran harus diisi.");
-
         return;
     }
 
@@ -258,60 +173,66 @@ expenseForm.addEventListener("submit", function (event) {
         date: date,
 
         category: category
+
     };
 
 
     expenses.push(newExpense);
 
-
     totalExpense += amount;
 
+    saveExpenses();
+
+
+    document.getElementById("totalExpense").textContent =
+        formatRupiah(totalExpense);
+
+    updateRemaining();
+    updateTransactionList();
+    updateChart();
+
+    expenseForm.reset();
+
+});
+
+
+sortSelect.addEventListener(
+    "change",
+    updateTransactionList
+);
+
+
+function calculateTotalExpense() {
+
+    return expenses.reduce(
+        function (total, expense) {
+
+            return total +
+                Number(expense.amount || 0);
+
+        },
+        0
+    );
+}
+
+
+function saveExpenses() {
 
     localStorage.setItem(
         "expenses",
         JSON.stringify(expenses)
     );
 
+}
 
-    document.getElementById("totalExpense").textContent =
-        formatRupiah(totalExpense);
-
-
-    updateRemaining();
-
-    updateTransactionList();
-
-    updateChart();
-
-
-    expenseForm.reset();
-});
-
-
-// =========================
-// SORT
-// =========================
-
-sortSelect.addEventListener("change", function () {
-
-    updateTransactionList();
-
-});
-
-
-// =========================
-// SISA BUDGET
-// =========================
 
 function updateRemaining() {
 
     const remaining =
         totalBudget - totalExpense;
 
-
     const remainingElement =
         document.getElementById("remainingBudget");
-
 
     remainingElement.textContent =
         formatRupiah(remaining);
@@ -326,13 +247,11 @@ function updateRemaining() {
 
         remainingElement.style.color =
             "";
+
     }
+
 }
 
-
-// =========================
-// DAFTAR PENGELUARAN
-// =========================
 
 function updateTransactionList() {
 
@@ -345,6 +264,7 @@ function updateTransactionList() {
             "<p>Belum ada pengeluaran.</p>";
 
         return;
+
     }
 
 
@@ -358,141 +278,184 @@ function updateTransactionList() {
 
     if (sortType === "highest") {
 
-        sortedExpenses.sort(function (a, b) {
+        sortedExpenses.sort(
+            function (a, b) {
 
-            return b.amount - a.amount;
+                return b.amount - a.amount;
 
-        });
+            }
+        );
+
     }
 
 
     if (sortType === "lowest") {
 
-        sortedExpenses.sort(function (a, b) {
+        sortedExpenses.sort(
+            function (a, b) {
 
-            return a.amount - b.amount;
+                return a.amount - b.amount;
 
-        });
+            }
+        );
+
     }
 
 
     if (sortType === "category") {
 
-        sortedExpenses.sort(function (a, b) {
+        sortedExpenses.sort(
+            function (a, b) {
 
-            return a.category.localeCompare(
-                b.category
-            );
+                return a.category.localeCompare(
+                    b.category
+                );
 
-        });
+            }
+        );
+
     }
 
 
     if (sortType === "newest") {
 
-        sortedExpenses.sort(function (a, b) {
+        sortedExpenses.sort(
+            function (a, b) {
 
-            return new Date(b.date) -
-                new Date(a.date);
+                return new Date(b.date) -
+                    new Date(a.date);
 
-        });
+            }
+        );
+
     }
 
 
-    sortedExpenses.forEach(function (expense) {
+    sortedExpenses.forEach(
+        function (expense) {
 
-        const transaction =
-            document.createElement("div");
+            const transaction =
+                document.createElement("div");
 
-
-        transaction.className =
-            "transaction-item";
-
-
-        if (
-            spendingLimit > 0 &&
-            expense.amount >= spendingLimit
-        ) {
-
-            transaction.classList.add("warning");
-
-        }
+            transaction.className =
+                "transaction-item";
 
 
-        const formattedDate =
-            new Date(expense.date).toLocaleDateString(
-                "id-ID",
-                {
-                    day: "2-digit",
-                    month: "long",
-                    year: "numeric"
+            if (
+                spendingLimit > 0 &&
+                expense.amount >= spendingLimit
+            ) {
+
+                transaction.classList.add(
+                    "warning"
+                );
+
+            }
+
+
+            const formattedDate =
+                new Date(
+                    expense.date
+                ).toLocaleDateString(
+                    "id-ID",
+                    {
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric"
+                    }
+                );
+
+
+            const info =
+                document.createElement("div");
+
+            info.className =
+                "transaction-info";
+
+
+            const name =
+                document.createElement("div");
+
+            name.className =
+                "transaction-name";
+
+            name.textContent =
+                expense.description;
+
+
+            const category =
+                document.createElement("div");
+
+            category.className =
+                "transaction-category";
+
+            category.textContent =
+                expense.category +
+                " • " +
+                formattedDate;
+
+
+            const amount =
+                document.createElement("div");
+
+            amount.className =
+                "transaction-amount";
+
+            amount.textContent =
+                formatRupiah(expense.amount);
+
+
+            info.appendChild(name);
+            info.appendChild(category);
+            info.appendChild(amount);
+
+
+            const deleteButton =
+                document.createElement("button");
+
+            deleteButton.className =
+                "delete-button";
+
+            deleteButton.textContent =
+                "Hapus";
+
+
+            deleteButton.addEventListener(
+                "click",
+                function () {
+
+                    deleteExpenseById(
+                        expense.id
+                    );
+
                 }
             );
 
 
-        transaction.innerHTML = `
+            transaction.appendChild(info);
+            transaction.appendChild(deleteButton);
 
-            <div class="transaction-info">
+            transactionList.appendChild(transaction);
 
-                <div class="transaction-name">
-                    ${expense.description}
-                </div>
+        }
+    );
 
-                <div class="transaction-category">
-                    ${expense.category} • ${formattedDate}
-                </div>
-
-                <div class="transaction-amount">
-                    ${formatRupiah(expense.amount)}
-                </div>
-
-            </div>
-
-            <button
-                class="delete-button"
-                data-id="${expense.id}"
-            >
-                Hapus
-            </button>
-
-        `;
+}
 
 
-        const deleteButton =
-            transaction.querySelector(".delete-button");
+function deleteExpenseById(id) {
 
+    const index =
+        expenses.findIndex(
+            function (expense) {
 
-        deleteButton.addEventListener(
-            "click",
-            function () {
-
-                deleteExpenseById(expense.id);
+                return expense.id === id;
 
             }
         );
 
 
-        transactionList.appendChild(transaction);
-    });
-}
-
-
-// =========================
-// HAPUS PENGELUARAN
-// =========================
-
-function deleteExpenseById(id) {
-
-    const index =
-        expenses.findIndex(function (expense) {
-
-            return expense.id === id;
-
-        });
-
-
     if (index === -1) {
-
         return;
     }
 
@@ -503,87 +466,206 @@ function deleteExpenseById(id) {
 
     expenses.splice(index, 1);
 
-
-    localStorage.setItem(
-        "expenses",
-        JSON.stringify(expenses)
-    );
+    saveExpenses();
 
 
     document.getElementById("totalExpense").textContent =
         formatRupiah(totalExpense);
 
-
     updateRemaining();
-
     updateTransactionList();
-
     updateChart();
+
 }
 
-
-// =========================
-// CHART
-// =========================
 
 function updateChart() {
 
     const categoryTotals = {};
 
+    expenses.forEach(
+        function (expense) {
 
-    expenses.forEach(function (expense) {
+            if (
+                !categoryTotals[
+                    expense.category
+                ]
+            ) {
 
-        if (!categoryTotals[expense.category]) {
+                categoryTotals[
+                    expense.category
+                ] = 0;
 
-            categoryTotals[expense.category] = 0;
+            }
+
+            categoryTotals[
+                expense.category
+            ] += Number(expense.amount);
 
         }
+    );
 
 
-        categoryTotals[expense.category] +=
-            Number(expense.amount);
-
-    });
-
-
-    expenseChart.data.labels =
+    const categories =
         Object.keys(categoryTotals);
 
 
-    expenseChart.data.datasets[0].data =
-        Object.values(categoryTotals);
+    if (categories.length === 0) {
+
+        chartElement.style.background =
+            "#e2e8f0";
+
+        chartElement.innerHTML =
+            "<span>Belum ada data</span>";
+
+        chartLegend.innerHTML = "";
+
+        return;
+
+    }
 
 
-    expenseChart.update();
+    const colors = [
+        "#6366f1",
+        "#22c55e",
+        "#f59e0b",
+        "#ef4444",
+        "#06b6d4",
+        "#ec4899"
+    ];
+
+
+    const total =
+        Object.values(categoryTotals)
+            .reduce(
+                function (sum, value) {
+
+                    return sum + value;
+
+                },
+                0
+            );
+
+
+    let currentAngle = 0;
+
+    const gradients = [];
+
+
+    categories.forEach(
+        function (category, index) {
+
+            const value =
+                categoryTotals[category];
+
+            const percentage =
+                (value / total) * 100;
+
+            const start =
+                currentAngle;
+
+            const end =
+                currentAngle + percentage;
+
+            gradients.push(
+                colors[index % colors.length] +
+                " " +
+                start +
+                "% " +
+                end +
+                "%"
+            );
+
+            currentAngle = end;
+
+        }
+    );
+
+
+    chartElement.style.background =
+        "conic-gradient(" +
+        gradients.join(", ") +
+        ")";
+
+
+    chartElement.innerHTML =
+        "<span>" +
+        formatRupiah(total) +
+        "</span>";
+
+
+    chartLegend.innerHTML = "";
+
+
+    categories.forEach(
+        function (category, index) {
+
+            const item =
+                document.createElement("div");
+
+            item.className =
+                "legend-item";
+
+
+            const color =
+                document.createElement("span");
+
+            color.className =
+                "legend-color";
+
+            color.style.background =
+                colors[index % colors.length];
+
+
+            const text =
+                document.createElement("span");
+
+            const percentage =
+                (
+                    categoryTotals[category] /
+                    total *
+                    100
+                ).toFixed(1);
+
+
+            text.textContent =
+                category +
+                " (" +
+                percentage +
+                "%)";
+
+
+            item.appendChild(color);
+            item.appendChild(text);
+
+            chartLegend.appendChild(item);
+
+        }
+    );
+
 }
 
-
-// =========================
-// BUAT ID UNIK
-// =========================
 
 function generateId() {
 
     return Date.now().toString() +
+        "-" +
         Math.random()
             .toString(36)
             .substring(2, 9);
+
 }
 
 
-// =========================
-// FORMAT RUPIAH
-// =========================
-
 function formatRupiah(number) {
 
-    return new Intl.NumberFormat("id-ID", {
+    return new Intl.NumberFormat(
+        "id-ID",
+        {
+            style: "currency",
+            currency: "IDR",
+            minimumFractionDigits: 0
+        }
+    ).format(number);
 
-        style: "currency",
-
-        currency: "IDR",
-
-        minimumFractionDigits: 0
-
-    }).format(number);
 }

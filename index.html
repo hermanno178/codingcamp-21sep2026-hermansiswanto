@@ -25,8 +25,6 @@
 
     <main>
 
-        <!-- SUMMARY -->
-
         <section class="summary">
 
             <div class="card budget-card">
@@ -46,9 +44,6 @@
 
         </section>
 
-
-        <!-- ATUR BUDGET -->
-
         <section class="form-section">
 
             <h2>Atur Budget</h2>
@@ -61,6 +56,7 @@
                     type="number"
                     id="budget"
                     placeholder="Contoh: 1000000"
+                    min="1"
                     required
                 >
 
@@ -72,6 +68,7 @@
                     type="number"
                     id="limit"
                     placeholder="Contoh: 500000"
+                    min="0"
                 >
 
                 <button type="submit">
@@ -81,9 +78,6 @@
             </form>
 
         </section>
-
-
-        <!-- TAMBAH PENGELUARAN -->
 
         <section class="form-section">
 
@@ -110,6 +104,7 @@
                     type="number"
                     id="amount"
                     placeholder="Contoh: 25000"
+                    min="1"
                     required
                 >
 
@@ -167,9 +162,6 @@
 
         </section>
 
-
-        <!-- DAFTAR PENGELUARAN -->
-
         <section class="transaction-section">
 
             <div class="section-header">
@@ -204,21 +196,24 @@
 
         </section>
 
-
-        <!-- VISUALISASI -->
-
         <section class="chart-section">
 
             <h2>Visualisasi Pengeluaran</h2>
 
-            <canvas id="expenseChart"></canvas>
+            <div class="chart-container">
+
+                <div id="expenseChart" class="donut-chart">
+                    <span>Belum ada data</span>
+                </div>
+
+                <div id="chartLegend" class="chart-legend"></div>
+
+            </div>
 
         </section>
 
     </main>
 
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/script.js"></script>
 
 </body>
